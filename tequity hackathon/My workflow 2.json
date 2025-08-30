@@ -1,0 +1,145 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a medical insights assistant. The user's question is: {{$json[\"body\"][\"message\"]}}.\n\nYour response must be a single JSON object. Do not include any text before or after the JSON.\n\nThis JSON object must have two top-level keys:\n- \"chatMessage\": A short, conversational answer. If you cannot provide a specific response, use \"I am a medical insights assistant. Please ask a health-related question or upload a report.\"\n- \"insights\": An array of objects. Each object must have a \"title\", a \"priority\" (\"low\", \"medium\", or \"high\"), and a \"content\" string. If you have no insights to provide, this array should be empty.\n\nExample of the required JSON format:\n```json\n{\n  \"chatMessage\": \"Based on your symptoms, it sounds like you might have the flu. Getting plenty of rest and staying hydrated is key. What other symptoms are you experiencing?\",\n  \"insights\": [\n    {\n      \"title\": \"Diagnosis\",\n      \"priority\": \"high\",\n      \"content\": \"Based on your message, you may have the flu.\"\n    },\n    {\n      \"title\": \"Hydration\",\n      \"priority\": \"medium\",\n      \"content\": \"Drink plenty of water and herbal tea to stay hydrated.\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        64,
+        0
+      ],
+      "id": "aaf16d00-b6a8-4554-b1f0-51b5bae159f2",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-4-turbo",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        64,
+        192
+      ],
+      "id": "a5dc5749-ad19-4f7f-82ba-129c1b2cca3c",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "RVNHI3Thh2BDnOpD",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{$node[\"Function\"].json}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        640,
+        0
+      ],
+      "id": "02ca891a-7149-42eb-8d24-f10ff2f0df4b",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b4818cda-6adc-49f6-a0a3-e5ecceaf7c47",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -256,
+        80
+      ],
+      "id": "bea8b3d7-482f-479d-9ce7-c3c938d3cc0e",
+      "name": "Webhook",
+      "webhookId": "b4818cda-6adc-49f6-a0a3-e5ecceaf7c47",
+      "alwaysOutputData": true,
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "try {\n  let input = items[0].json.output;\n  if (!input) {\n    throw new Error('No valid output from AI Agent.');\n  }\n  let parsedOutput = JSON.parse(input);\n  return [{ json: parsedOutput }];\n} catch (e) {\n  // If parsing fails, return a default valid JSON object\n  return [{\n    json: {\n      \"chatMessage\": \"I am a medical insights assistant. Please ask a health-related question or upload a report.\",\n      \n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        16
+      ],
+      "id": "77f476b6-2618-4fd1-94bb-14999ea7ce86",
+      "name": "Function"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Function",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "09ff46bd-0eec-466d-8fea-a0b4ce361744",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "27f527e7fb707ccd940d7182f12410479ecb8b6fa978a88a8df7ffb1cd5bb713"
+  },
+  "id": "JPCYMaiVZzTZO05x",
+  "tags": []
+}
